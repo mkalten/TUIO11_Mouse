@@ -42,9 +42,7 @@ public class TuioMouse implements TuioListener {
 		if (mouse<0) {
 			mouse = tcur.getSessionID();
 			if (robot!=null) robot.mouseMove(tcur.getScreenX(width),tcur.getScreenY(height));
-		} /*else if (mouse==tcur.getSessionID()) {
-			if (robot!=null) robot.mouseMove(tcur.getScreenX(width),tcur.getScreenY(height));
-		}*/ else {
+		} else {
 			if (robot!=null) robot.mousePress(InputEvent.BUTTON1_MASK);
 		}
 	}
@@ -78,6 +76,8 @@ public class TuioMouse implements TuioListener {
 	public static void main(String argv[]) {
 	
 		int port = 3333;
+		System.setProperty("apple.awt.UIElement", "true");
+		java.awt.Toolkit.getDefaultToolkit();
  
 		if (argv.length==1) {
 			try { port = Integer.parseInt(argv[1]); }
@@ -85,10 +85,47 @@ public class TuioMouse implements TuioListener {
 		}
 
  		TuioMouse mouse = new TuioMouse();
-		TuioClient client = new TuioClient(port);
-
+		
+		final TuioClient client = new TuioClient(port);
 		System.out.println("listening to TUIO messages at port "+port);
 		client.addTuioListener(mouse);
 		client.connect();
+		
+		if (SystemTray.isSupported()) {
+		
+			final PopupMenu popup = new PopupMenu();
+			final TrayIcon trayIcon =
+			new TrayIcon(Toolkit.getDefaultToolkit().getImage(mouse.getClass().getResource("tuio.gif")));
+			trayIcon.setToolTip("Tuio Mouse");
+			final SystemTray tray = SystemTray.getSystemTray();
+			
+			final CheckboxMenuItem pauseItem = new CheckboxMenuItem("Pause");
+			final MenuItem exitItem = new MenuItem("Exit");
+			
+			popup.add(pauseItem);
+			pauseItem.addItemListener( new ItemListener() { public void itemStateChanged(ItemEvent evt) {
+				
+				if (evt.getStateChange() == ItemEvent.SELECTED) {
+					if (client.isConnected()) client.disconnect();
+				} else {
+					if (!client.isConnected()) client.connect();
+				}
+			} } );
+			popup.add(exitItem);
+			exitItem.addActionListener( new ActionListener() { public void actionPerformed(ActionEvent evt) {
+				client.disconnect();
+				System.exit(0);
+			} } );
+			
+			trayIcon.setPopupMenu(popup);
+			
+			try {
+				tray.add(trayIcon);
+			} catch (AWTException e) {
+				System.out.println("SystemTray could not be added.");
+			}
+			
+		} else System.out.println("SystemTray is not supported");
+
 	}
 }

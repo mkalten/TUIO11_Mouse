@@ -88,17 +88,56 @@ public class TuioTouchpad implements TuioListener {
 	public static void main(String argv[]) {
 	
 		int port = 3333;
+		System.setProperty("apple.awt.UIElement", "true");
+		java.awt.Toolkit.getDefaultToolkit();
  
 		if (argv.length==1) {
 			try { port = Integer.parseInt(argv[1]); }
 			catch (Exception e) { System.out.println("usage: java TuioTouchpad [port]"); }
 		}
 
- 		TuioTouchpad trackpad = new TuioTouchpad();
-		TuioClient client = new TuioClient(port);
+ 		TuioTouchpad touchpad = new TuioTouchpad();
+		final TuioClient client = new TuioClient(port);
 
 		System.out.println("listening to TUIO messages at port "+port);
-		client.addTuioListener(trackpad);
+		client.addTuioListener(touchpad);
 		client.connect();
+		
+		if (SystemTray.isSupported()) {
+			
+			final PopupMenu popup = new PopupMenu();
+			final TrayIcon trayIcon =
+			new TrayIcon(Toolkit.getDefaultToolkit().getImage(touchpad.getClass().getResource("tuio.gif")));
+			trayIcon.setToolTip("Tuio Touchpad");
+			final SystemTray tray = SystemTray.getSystemTray();
+			
+			final CheckboxMenuItem pauseItem = new CheckboxMenuItem("Pause");
+			final MenuItem exitItem = new MenuItem("Exit");
+			
+			popup.add(pauseItem);
+			pauseItem.addItemListener( new ItemListener() { public void itemStateChanged(ItemEvent evt) {
+				
+				if (evt.getStateChange() == ItemEvent.SELECTED) {
+					if (client.isConnected()) client.disconnect();
+				} else {
+					if (!client.isConnected()) client.connect();
+				}
+			} } );
+			popup.add(exitItem);
+			exitItem.addActionListener( new ActionListener() { public void actionPerformed(ActionEvent evt) {
+				client.disconnect();
+				System.exit(0);
+			} } );
+			
+			trayIcon.setPopupMenu(popup);
+			
+			try {
+				tray.add(trayIcon);
+			} catch (AWTException e) {
+				System.out.println("SystemTray could not be added.");
+			}
+			
+		} else System.out.println("SystemTray is not supported");
+
 	}
 }
