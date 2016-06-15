@@ -5,13 +5,18 @@ This software is part of reacTIVision, an open source fiducial
 tracking and multi-touch framework based on computer vision. 
 http://reactivision.sourceforge.net/
 
+Prerequisites :
+--------------
+This application requires an installed Java Runtime Environment:
+http://www.oracle.com/technetwork/java/javase/downloads/
+
 Usage :
 -------
-On most platforms you can start the application just by double-clicking the TuioMouse.jar file.
+You can start the application just by double-clicking the TuioMouse.jar file.
+This multiplatform Java application will register into the System Tray.
+
 If you want to specify an alternative TUIO port or start the application from the command line,
-just type: java -jar TuioMouse.jar [port]
-substitute [port] with the desired UDP port number.
-The application will run in the background without any GUI.
+just type: java -jar TuioMouse.jar [port] (substitute with the desired UDP port number)
 
 TuioMouse will use the first available TuioCursor as the principal mouse pointer.
 Additional TuioCursor ADD and REMOVE events are treated as mouse button PRESS and RELEASE events.
