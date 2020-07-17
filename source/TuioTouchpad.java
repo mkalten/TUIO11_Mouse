@@ -101,17 +101,18 @@ public class TuioTouchpad implements TuioListener {
 
  		TuioTouchpad touchpad = new TuioTouchpad();
 		final TuioClient client = new TuioClient(port);
-
-		System.out.println("listening to TUIO messages at port "+port);
 		client.addTuioListener(touchpad);
 		client.connect();
 		
 		if (SystemTray.isSupported()) {
-			
+		
 			final PopupMenu popup = new PopupMenu();
 			final TrayIcon trayIcon =
 			new TrayIcon(Toolkit.getDefaultToolkit().getImage(touchpad.getClass().getResource("tuio.gif")));
 			trayIcon.setToolTip("Tuio Touchpad");
+            popup.add(new MenuItem("TUIO Trackpad"));
+            popup.addSeparator();
+
 			final SystemTray tray = SystemTray.getSystemTray();
 
             final MenuItem ipAddress = new MenuItem("IP Address:");
@@ -125,7 +126,7 @@ public class TuioTouchpad implements TuioListener {
                     while (addrs.hasMoreElements()) {
                         InetAddress addr = addrs.nextElement();
                         if (!addr.isLoopbackAddress() && (!addr.isLinkLocalAddress() || addr.toString().startsWith("/169.254"))) {
-                            popup.add(new MenuItem("    " + addr.getHostAddress()));
+                            popup.add(new MenuItem("    " + nic.getName() + ": " + addr.getHostAddress()));
                         }
                     }
                 }
