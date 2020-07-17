@@ -21,6 +21,9 @@
 
 import java.awt.*;
 import java.awt.event.*;
+import java.net.*;
+import java.io.*;
+import java.util.*;
 import TUIO.*;
 
 public class TuioTouchpad implements TuioListener {
@@ -110,7 +113,29 @@ public class TuioTouchpad implements TuioListener {
 			new TrayIcon(Toolkit.getDefaultToolkit().getImage(touchpad.getClass().getResource("tuio.gif")));
 			trayIcon.setToolTip("Tuio Touchpad");
 			final SystemTray tray = SystemTray.getSystemTray();
-			
+
+            final MenuItem ipAddress = new MenuItem("IP Address:");
+            popup.add(ipAddress);
+
+            try {
+                Enumeration<NetworkInterface> nics = NetworkInterface.getNetworkInterfaces();
+                while (nics.hasMoreElements()) {
+                    NetworkInterface nic = nics.nextElement();
+                    Enumeration<InetAddress> addrs = nic.getInetAddresses();
+                    while (addrs.hasMoreElements()) {
+                        InetAddress addr = addrs.nextElement();
+                        if (!addr.isLoopbackAddress() && (!addr.isLinkLocalAddress() || addr.toString().startsWith("/169.254"))) {
+                            popup.add(new MenuItem("    " + addr.getHostAddress()));
+                        }
+                    }
+                }
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+
+            popup.addSeparator();
+            popup.add("Port: " + port);
+
 			final CheckboxMenuItem pauseItem = new CheckboxMenuItem("Pause");
 			final MenuItem exitItem = new MenuItem("Exit");
 			
