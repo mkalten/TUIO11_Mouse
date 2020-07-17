@@ -148,8 +148,7 @@ public class TuioDriver implements TuioListener {
 
 			final SystemTray tray = SystemTray.getSystemTray();
 
-            final MenuItem ipAddress = new MenuItem("IP Address:");
-            popup.add(ipAddress);
+            popup.add(new MenuItem("IP Address:"));
 
             try {
                 Enumeration<NetworkInterface> nics = NetworkInterface.getNetworkInterfaces();
@@ -159,7 +158,7 @@ public class TuioDriver implements TuioListener {
                     while (addrs.hasMoreElements()) {
                         InetAddress addr = addrs.nextElement();
                         if (!addr.isLoopbackAddress() && (!addr.isLinkLocalAddress() || addr.toString().startsWith("/169.254"))) {
-                            popup.add(new MenuItem("    " + nic.getName() + ": " + addr.getHostAddress()));
+                            popup.insert(new MenuItem("    " + nic.getName() + ": " + addr.getHostAddress()), 5);
                         }
                     }
                 }
@@ -167,8 +166,11 @@ public class TuioDriver implements TuioListener {
                 e.printStackTrace();
             }
 
+            final MenuItem refreshItem = new MenuItem("Refresh");
+            popup.add(refreshItem);
+
             popup.addSeparator();
-            popup.add("Port: " + port);
+            popup.add(new MenuItem("Port: " + port));
 
 			final MenuItem exitItem = new MenuItem("Exit");
 			
@@ -196,6 +198,29 @@ public class TuioDriver implements TuioListener {
 				} else {
 					tuioTrackpadMenuItem.setState(true);
 				}
+			} } );
+
+			refreshItem.addActionListener( new ActionListener() { public void actionPerformed(ActionEvent evt) {
+                while (popup.getItemCount() > 9) {
+                    popup.remove(5);
+                }
+                
+                try {
+                    Enumeration<NetworkInterface> nics = NetworkInterface.getNetworkInterfaces();
+                    while (nics.hasMoreElements()) {
+                        NetworkInterface nic = nics.nextElement();
+                        Enumeration<InetAddress> addrs = nic.getInetAddresses();
+                        while (addrs.hasMoreElements()) {
+                            InetAddress addr = addrs.nextElement();
+                            if (!addr.isLoopbackAddress() && (!addr.isLinkLocalAddress() || addr.toString().startsWith("/169.254"))) {
+                                popup.insert(new MenuItem("    " + nic.getName() + ": " + addr.getHostAddress()), 5);
+                            }
+                        }
+                    }
+                } catch (SocketException e) {
+                    e.printStackTrace();
+                }
+                
 			} } );
 
 			pauseItem.addItemListener( new ItemListener() { public void itemStateChanged(ItemEvent evt) {
