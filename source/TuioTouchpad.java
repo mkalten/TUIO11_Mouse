@@ -108,7 +108,7 @@ public class TuioTouchpad implements TuioListener {
 		
 			final PopupMenu popup = new PopupMenu();
 			final TrayIcon trayIcon =
-			new TrayIcon(Toolkit.getDefaultToolkit().getImage(touchpad.getClass().getResource("tuio.gif")));
+			new TrayIcon(Toolkit.getDefaultToolkit().getImage(touchpad.getClass().getResource("tuio.png")));
 			trayIcon.setToolTip("Tuio Touchpad");
             popup.add(new MenuItem("TUIO Trackpad"));
             popup.addSeparator();

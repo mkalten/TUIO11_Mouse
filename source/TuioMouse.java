@@ -97,7 +97,7 @@ public class TuioMouse implements TuioListener {
 		
 			final PopupMenu popup = new PopupMenu();
 			final TrayIcon trayIcon =
-			new TrayIcon(Toolkit.getDefaultToolkit().getImage(mouse.getClass().getResource("tuio.gif")));
+			new TrayIcon(Toolkit.getDefaultToolkit().getImage(mouse.getClass().getResource("tuio.png")));
 			trayIcon.setToolTip("Tuio Mouse");
 			final SystemTray tray = SystemTray.getSystemTray();
 

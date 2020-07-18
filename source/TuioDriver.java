@@ -134,7 +134,7 @@ public class TuioDriver implements TuioListener {
 		
 			final PopupMenu popup = new PopupMenu();
 			final TrayIcon trayIcon =
-            new TrayIcon(Toolkit.getDefaultToolkit().getImage(mouse.getClass().getResource("tuio.gif")));
+            new TrayIcon(Toolkit.getDefaultToolkit().getImage(mouse.getClass().getResource("tuio.png")));
 
 			trayIcon.setToolTip("Tuio Mouse");
             final CheckboxMenuItem tuioMouseMenuItem = new CheckboxMenuItem("Tuio Mouse");
@@ -157,7 +157,7 @@ public class TuioDriver implements TuioListener {
                     Enumeration<InetAddress> addrs = nic.getInetAddresses();
                     while (addrs.hasMoreElements()) {
                         InetAddress addr = addrs.nextElement();
-                        if (!addr.isLoopbackAddress() && (!addr.isLinkLocalAddress() || addr.toString().startsWith("/169.254"))) {
+                        if (!addr.isLoopbackAddress() && !addr.toString().startsWith("/fe80")) {
                             popup.insert(new MenuItem("    " + nic.getName() + ": " + addr.getHostAddress()), 5);
                         }
                     }
