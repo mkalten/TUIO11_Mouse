@@ -1,5 +1,5 @@
 /*
-    TUIO Trackpad Driver - part of the reacTIVision project
+    TUIO Driver - part of the reacTIVision project
     http://reactivision.sourceforge.net/
 
     Copyright (c) 2005-2016 Martin Kaltenbrunner <martin@tuio.org>
@@ -26,12 +26,13 @@ import java.io.*;
 import java.util.*;
 import TUIO.*;
 
-public class TuioTouchpad implements TuioListener {
+public class TuioDriver implements TuioListener {
 	
 	private Robot robot = null;
 	private int width = 0;
 	private int height = 0;
 	private long mouse = -1;
+    private int mode = 1;
 
 	public void addTuioObject(TuioObject tobj) {}
 	public void updateTuioObject(TuioObject tobj) {}	
@@ -41,8 +42,32 @@ public class TuioTouchpad implements TuioListener {
 	public void removeTuioBlob(TuioBlob tblb) {}
 	public void refresh(TuioTime bundleTime) {}
 	
-	public void addTuioCursor(TuioCursor tcur) {
-		
+    public void addTuioCursor(TuioCursor tcur) {
+        if (mode == 1) addTuioMouseCursor(tcur);
+        if (mode == 2) addTuioTrackpadCursor(tcur);
+    }
+
+    public void updateTuioCursor(TuioCursor tcur) {
+        if (mode == 1) updateTuioMouseCursor(tcur);
+        if (mode == 2) updateTuioTrackpadCursor(tcur);
+    }
+
+	private void addTuioMouseCursor(TuioCursor tcur) {
+		if (mouse<0) {
+			mouse = tcur.getSessionID();
+			if (robot!=null) robot.mouseMove(tcur.getScreenX(width),tcur.getScreenY(height));
+		} else {
+			if (robot!=null) robot.mousePress(InputEvent.BUTTON1_MASK);
+		}
+	}
+
+	private void updateTuioMouseCursor(TuioCursor tcur) {
+		if (mouse==tcur.getSessionID()) {
+			if (robot!=null) robot.mouseMove(tcur.getScreenX(width),tcur.getScreenY(height));
+		} 
+	}
+	
+    private void addTuioTrackpadCursor(TuioCursor tcur) {	
 		Point pos = MouseInfo.getPointerInfo().getLocation();
 		int xpos = pos.x+(int)Math.round(tcur.getXSpeed()*Math.sqrt(width));
 		if(xpos<0) xpos=0; if(xpos>width) xpos=width;
@@ -57,7 +82,7 @@ public class TuioTouchpad implements TuioListener {
 		}
 	}
 
-	public void updateTuioCursor(TuioCursor tcur) {
+	private void updateTuioTrackpadCursor(TuioCursor tcur) {
 		Point pos = MouseInfo.getPointerInfo().getLocation();
 		int xpos = pos.x+(int)Math.round(tcur.getXSpeed()*Math.sqrt(width));
 		if(xpos<0) xpos=0; if(xpos>width) xpos=width;
@@ -77,7 +102,7 @@ public class TuioTouchpad implements TuioListener {
 		
 	}
 	
-	public TuioTouchpad() {
+	public TuioDriver() {
 		try { robot = new Robot(); }
 		catch (Exception e) {
 			System.out.println("failed to initialize mouse robot");
@@ -96,27 +121,34 @@ public class TuioTouchpad implements TuioListener {
  
 		if (argv.length==1) {
 			try { port = Integer.parseInt(argv[1]); }
-			catch (Exception e) { System.out.println("usage: java TuioTouchpad [port]"); }
+			catch (Exception e) { System.out.println("usage: java TuioDriver [port]"); }
 		}
 
- 		TuioTouchpad touchpad = new TuioTouchpad();
+ 		final TuioDriver mouse = new TuioDriver();
+		
 		final TuioClient client = new TuioClient(port);
-		client.addTuioListener(touchpad);
+		client.addTuioListener(mouse);
 		client.connect();
 		
 		if (SystemTray.isSupported()) {
 		
 			final PopupMenu popup = new PopupMenu();
 			final TrayIcon trayIcon =
-			new TrayIcon(Toolkit.getDefaultToolkit().getImage(touchpad.getClass().getResource("tuio.png")));
-			trayIcon.setToolTip("Tuio Touchpad");
-            popup.add(new MenuItem("TUIO Trackpad"));
+            new TrayIcon(Toolkit.getDefaultToolkit().getImage(mouse.getClass().getResource("tuio.png")));
+
+			trayIcon.setToolTip("Tuio Mouse");
+            final CheckboxMenuItem tuioMouseMenuItem = new CheckboxMenuItem("Tuio Mouse");
+            popup.add(tuioMouseMenuItem);
+            tuioMouseMenuItem.setState(true);
+            final CheckboxMenuItem tuioTrackpadMenuItem = new CheckboxMenuItem("Tuio Trackpad");
+            popup.add(tuioTrackpadMenuItem);
+			final CheckboxMenuItem pauseItem = new CheckboxMenuItem("Pause Tuio");
+			popup.add(pauseItem);
             popup.addSeparator();
 
 			final SystemTray tray = SystemTray.getSystemTray();
 
-            final MenuItem ipAddress = new MenuItem("IP Address:");
-            popup.add(ipAddress);
+            popup.add(new MenuItem("IP Address:"));
 
             try {
                 Enumeration<NetworkInterface> nics = NetworkInterface.getNetworkInterfaces();
@@ -125,8 +157,8 @@ public class TuioTouchpad implements TuioListener {
                     Enumeration<InetAddress> addrs = nic.getInetAddresses();
                     while (addrs.hasMoreElements()) {
                         InetAddress addr = addrs.nextElement();
-                        if (!addr.isLoopbackAddress() && (!addr.isLinkLocalAddress() || addr.toString().startsWith("/169.254"))) {
-                            popup.add(new MenuItem("    " + nic.getName() + ": " + addr.getHostAddress()));
+                        if (!addr.isLoopbackAddress() && !addr.toString().startsWith("/fe80")) {
+                            popup.insert(new MenuItem("    " + nic.getName() + ": " + addr.getHostAddress()), 5);
                         }
                     }
                 }
@@ -134,29 +166,80 @@ public class TuioTouchpad implements TuioListener {
                 e.printStackTrace();
             }
 
-            popup.addSeparator();
-            popup.add("Port: " + port);
+            final MenuItem refreshItem = new MenuItem("Refresh");
+            popup.add(refreshItem);
 
-			final CheckboxMenuItem pauseItem = new CheckboxMenuItem("Pause");
+            popup.addSeparator();
+            popup.add(new MenuItem("Port: " + port));
+
 			final MenuItem exitItem = new MenuItem("Exit");
 			
-			popup.add(pauseItem);
+			trayIcon.setPopupMenu(popup);
+
+			tuioMouseMenuItem.addItemListener( new ItemListener() { public void itemStateChanged(ItemEvent evt) {
+
+				if (evt.getStateChange() == ItemEvent.SELECTED) {
+                    mouse.mode = 1;
+                    if (!client.isConnected()) client.connect();
+                    tuioTrackpadMenuItem.setState(false);
+                    pauseItem.setState(false);
+				} else {
+					tuioMouseMenuItem.setState(true);
+				}
+			} } );
+			
+			tuioTrackpadMenuItem.addItemListener( new ItemListener() { public void itemStateChanged(ItemEvent evt) {
+
+				if (evt.getStateChange() == ItemEvent.SELECTED) {
+                    mouse.mode = 2;
+                    if (!client.isConnected()) client.connect();
+					tuioMouseMenuItem.setState(false);
+                    pauseItem.setState(false);
+				} else {
+					tuioTrackpadMenuItem.setState(true);
+				}
+			} } );
+
+			refreshItem.addActionListener( new ActionListener() { public void actionPerformed(ActionEvent evt) {
+                while (popup.getItemCount() > 9) {
+                    popup.remove(5);
+                }
+                
+                try {
+                    Enumeration<NetworkInterface> nics = NetworkInterface.getNetworkInterfaces();
+                    while (nics.hasMoreElements()) {
+                        NetworkInterface nic = nics.nextElement();
+                        Enumeration<InetAddress> addrs = nic.getInetAddresses();
+                        while (addrs.hasMoreElements()) {
+                            InetAddress addr = addrs.nextElement();
+                            if (!addr.isLoopbackAddress() && (!addr.isLinkLocalAddress() || addr.toString().startsWith("/169.254"))) {
+                                popup.insert(new MenuItem("    " + nic.getName() + ": " + addr.getHostAddress()), 5);
+                            }
+                        }
+                    }
+                } catch (SocketException e) {
+                    e.printStackTrace();
+                }
+                
+			} } );
+
 			pauseItem.addItemListener( new ItemListener() { public void itemStateChanged(ItemEvent evt) {
 				
 				if (evt.getStateChange() == ItemEvent.SELECTED) {
-					if (client.isConnected()) client.disconnect();
+                    client.disconnect();
+					tuioMouseMenuItem.setState(false);
+					tuioTrackpadMenuItem.setState(false);
 				} else {
-					if (!client.isConnected()) client.connect();
+                    pauseItem.setState(true);
 				}
 			} } );
+            
 			popup.add(exitItem);
 			exitItem.addActionListener( new ActionListener() { public void actionPerformed(ActionEvent evt) {
 				client.disconnect();
 				System.exit(0);
 			} } );
-			
-			trayIcon.setPopupMenu(popup);
-			
+
 			try {
 				tray.add(trayIcon);
 			} catch (AWTException e) {
